@@ -1,8 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\services\CategorieService
-use App\Http\Requests\CategorieRequest
+use App\services\CategorieService;
+use App\Http\Requests\CategorieRequest;
 use Illuminate\Http\Request;
 
 class CategorieController extends Controller
@@ -14,12 +14,12 @@ class CategorieController extends Controller
 
     public function __construct()
     {
-        this->$categorieService=new CategorieService();
+        $this->categorieService=new CategorieService();
     }
     public function index()
     {
-        $categorie=$categorieService->index();
-        return response()->json($categorie,200);
+        $categories=$this->categorieService->index();
+        return response()->json($categories,200);
     }
 
     /**
@@ -27,7 +27,7 @@ class CategorieController extends Controller
      */
     public function store(CategorieRequest $request)
     {
-        $categorie = $this->$categorieService->store($request->validated());
+        $categorie = $this->categorieService->store($request->validated());
         return response()->json($categorie,201,[], JSON_UNESCAPED_UNICODE);
     }
 
@@ -36,7 +36,7 @@ class CategorieController extends Controller
      */
     public function show(string $id)
     {
-        $categorie = $this->$categorieService->show($id);
+        $categorie = $this->categorieService->show($id);
         return response()->json($categorie,200,[], JSON_UNESCAPED_UNICODE);
     }
 
@@ -45,11 +45,11 @@ class CategorieController extends Controller
      */
     public function update(CategorieRequest $request, string $id)
     {
-        $categorie = $this->offreService->update($request->validated(),$id);
+        $categorie = $this->categorieService->update($request->validated(),$id);
         return response->json(
             [
-                "message"=>"offre bien modifier",
-                "offre"=> $offre
+                "message"=>"categorie bien modifier",
+                "categorie"=> $categorie
             ], 200);
     }
 
@@ -58,6 +58,7 @@ class CategorieController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $this->categorieService->destroy($id);
+        return response()->json("",204);
     }
 }

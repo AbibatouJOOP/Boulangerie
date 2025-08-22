@@ -22,7 +22,12 @@ class ProduitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nom' => 'required|string|max:100',
+            'description' => 'required|string|max:500',
+            'stock' => 'required|integer',
+            'prix' => 'required|decimal:2',
+            'image' => 'required|string',
+            'categorie_id' => 'required|integer',
         ];
     }
 }

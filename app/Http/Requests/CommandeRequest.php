@@ -22,7 +22,9 @@ class CommandeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'cliend_id' => 'required|integer',
+            'montant_total' => 'required|decimal:2',
+            'statut' => 'required|string',
         ];
     }
 }
