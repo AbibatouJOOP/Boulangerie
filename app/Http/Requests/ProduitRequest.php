@@ -25,8 +25,10 @@ class ProduitRequest extends FormRequest
             'nom' => 'required|string|max:100',
             'description' => 'required|string|max:500',
             'stock' => 'required|integer',
-            'prix' => 'required|decimal:2',
-            'image' => 'required|string',
+            'prix' => 'required|numeric|between:0,999999.99',
+            'image' => $this->isMethod('post')
+                ? 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+                : 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'categorie_id' => 'required|integer',
         ];
     }

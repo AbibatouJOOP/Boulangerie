@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\LivraisonController;
+use App\Http\Controllers\PaiementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -17,26 +19,40 @@ use App\Http\Controllers\CommandeController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-Route::post('/register', [\App\Http\Controllers\AuthController::class, 'register']);
-Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    /*Route::get('/user', function (Request $request) {
-        return $request->user();
-    });*/
-    Route::middleware('role:ADMIN')->group(function () {
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) { return $request->user(); });
+    // Pour les admin
+    Route::middleware('role:ADMIN')->group(function() {
         Route::apiResource('categories', CategorieController::class);
         Route::apiResource('produits', ProduitController::class);
+        Route::delete('commandes/{id}', [CommandeController::class, 'destroy']);
     });
-    Route::middleware('role:ADMIN,AMPLOYE')->group(function () {
-        Route::apiResource('commandes', CommandeController::class);
+
+    // Pour les admins et employés
+    Route::middleware('role:ADMIN,EMPLOYE')->group(function() {
+        // Voir toutes les commandes
+        Route::get('commandes', [CommandeController::class, 'index']);
+        Route::get('commandes/{id}', [CommandeController::class, 'show']);
+        // Mettre à jour le statut
+        Route::put('commandes/{id}', [CommandeController::class, 'update']);
+        Route::put('/commande/{commandeId}/livraison', [LivraisonController::class, 'updateStatutLivraison']);
+        Route::put('/commande/{commandeId}/paiement', [PaiementController::class, 'updateStatutPaiement']);
+        Route::apiResource('livraisons', LivraisonController::class);
+        Route::apiResource('paiements', PaiementController::class);
     });
-    Route::middleware('role:CLIENT')->group(function () {
-        Route::get('produits', [ProduitController::class, 'index']);   // Voir les produits
-        Route::post('commandes', [CommandeController::class, 'store']); // Passer une commande
+
+    // Pour les clients
+    Route::middleware('role:CLIENT')->group(function() {
+        Route::get('produitsClient', [ProduitController::class, 'indexClient']);
+        // Le client crée sa commande
+        Route::post('commandes', [CommandeController::class, 'store']);
+        // Le client voit uniquement ses commandes
+        Route::get('mes-commandes', [CommandeController::class, 'mesCommandes']);
     });
-    return $request->user();
+
 });
 
 

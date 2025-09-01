@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -19,7 +22,7 @@ class AuthController extends Controller
             'nomComplet' => $validated['nomComplet'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
-            'role' => $request->role ?? 'Client'
+            'role' => strtoupper($request->role ?? 'CLIENT')
         ]);
         $token = $user->createToken('auth_token')->plainTextToken;
         return response()->json([

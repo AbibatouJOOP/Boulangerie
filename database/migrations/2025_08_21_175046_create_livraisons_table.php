@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('livraisons', function (Blueprint $table) {
             $table->id();
             $table->foreignId('commande_id')->constrained('commandes')->onDelete('cascade');
-            $table->foreignId('employe_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('employe_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->enum('statut',['livrée','non_livrée']);
             $table->date('date_livraison');
             $table->string('adresse_livraison');

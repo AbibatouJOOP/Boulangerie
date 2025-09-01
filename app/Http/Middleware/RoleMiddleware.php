@@ -15,12 +15,20 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next,...$roles): Response
     {
-        // Vérifie si son rôle est autorisé
-        if (! in_array($request->user()->role, $roles)) {
+        //Vérifier d'abord si l'utilisateur est authentifié
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Non authentifié'], 401);
+        }
+
+        //Maintenant on peut accéder au rôle en toute sécurité
+        if (!in_array($user->role, $roles)) {
             return response()->json(['error' => 'Accès refusé'], 403);
         }
+
         return $next($request);
     }
 
-    
+
 }

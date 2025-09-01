@@ -11,31 +11,30 @@ class ProduitService
 
     public function index()
     {
-        $produits = Produits::all();
+        // Inclure la relation avec la catégorie
+        $produits = Produits::with('categorie')->get();
         return $produits;
     }
 
-    public function store(array $request)
+    public function store(array $data)
     {
-        //Metier
-        $produit = Produits::create($request);
-        return $produit;
+        $produit = Produits::create($data);
+        return $produit->load('categorie'); // Charger la relation
     }
 
 
     public function show($id)
     {
-        //Produits::find($id);
-        $produit = Produits::findOrFail($id);
-        return response()->json($produit, 200, [], JSON_UNESCAPED_UNICODE);
+        $produit = Produits::with('categorie')->findOrFail($id);
+        return $produit; // Retourner directement le modèle, pas une response
     }
 
 
-    public function update(array $request, $id)
+    public function update(array $data, $id)
     {
-        $produit=this.show($id);
-        $produit->update($request);
-        return $produit;
+        $produit = Produits::findOrFail($id);
+        $produit->update($data);
+        return $produit->load('categorie');
     }
 
 
@@ -44,3 +43,13 @@ class ProduitService
         Produits::destroy($id);
     }
 }
+
+
+
+
+
+
+
+
+
+

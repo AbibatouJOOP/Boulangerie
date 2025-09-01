@@ -15,10 +15,16 @@ class ProduitController extends Controller
     public function __construct(){
         $this->produitService = new ProduitService();
     }
-    public function index()
+    public function index(Request $request)
     {
-        $produits=$this->produitService->index();
-        return response()->json($produits,200);
+        // Log pour debug
+        \Log::info('Accès à index produits', [
+            'user' => $request->user()->email ?? 'non défini',
+            'role' => $request->user()->role ?? 'non défini'
+        ]);
+
+        $produits = $this->produitService->index();
+        return response()->json($produits, 200);
     }
 
     /**
@@ -26,17 +32,27 @@ class ProduitController extends Controller
      */
     public function store(ProduitRequest $request)
     {
-        $produit=$this->produitService->store($request->validated());
-        return response()->json($produit,201,[], JSON_UNESCAPED_UNICODE);
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            // Sauvegarde dans storage/app/public/produits
+            $path = $request->file('image')->store('produits', 'public');
+            $data['image'] = $path; // enregistre le chemin dans la BDD
+        }
+
+        $produit = $this->produitService->store($data);
+
+        return response()->json($produit, 201, [], JSON_UNESCAPED_UNICODE);
     }
+
 
     /**
      * Display the specified resource.
      */
     public function show(string $id)
     {
-        $produit=$this->produitService->show($id);
-        return response()->json($produit,200,[],JSON_UNESCAPED_UNICODE);
+        $produit = $this->produitService->show($id);
+        return response()->json($produit, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -44,13 +60,26 @@ class ProduitController extends Controller
      */
     public function update(ProduitRequest $request, string $id)
     {
-        $produit = $this->produitService->update($request->validated(),$id);
-        return response->json(
-            [
-                "message"=>"produit bien modifier",
-                "produit"=> $produit
-            ], 200);
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('produits', 'public');
+            $data['image'] = $path;
+        }
+
+        $produit = $this->produitService->update($data, $id);
+
+        return response()->json([
+            "message" => "Produit mis à jour",
+            "produit" => $produit
+        ], 200, [], JSON_UNESCAPED_UNICODE);
     }
+
+    public function indexClient() {
+        $produits = $this->produitService->index();
+        return response()->json($produits, 200);
+    }
+
 
     /**
      * Remove the specified resource from storage.
@@ -58,6 +87,17 @@ class ProduitController extends Controller
     public function destroy(string $id)
     {
         $this->produitService->destroy($id);
-        return response()->json("",204);
+        return response()->json(null, 204);
     }
 }
+
+
+
+
+
+
+
+
+
+
+

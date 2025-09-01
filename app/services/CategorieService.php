@@ -27,13 +27,13 @@ class CategorieService
     {
         //Categorie::find($id);
         $categorie = Categories::findOrFail($id);
-        return response()->json($categorie, 200, [], JSON_UNESCAPED_UNICODE);
+        return $categorie;
     }
 
 
     public function update(array $request, $id)
     {
-        $categorie=this.show($id);
+        $categorie = Categories::findOrFail($id);
         $categorie->update($request);
         return $categorie;
     }

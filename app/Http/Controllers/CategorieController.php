@@ -45,12 +45,12 @@ class CategorieController extends Controller
      */
     public function update(CategorieRequest $request, string $id)
     {
-        $categorie = $this->categorieService->update($request->validated(),$id);
-        return response->json(
-            [
-                "message"=>"categorie bien modifier",
-                "categorie"=> $categorie
-            ], 200);
+        $categorie= $this->categorieService->update($request->validated(), $id);
+
+        return response()->json([
+            "message" => "categorie mise à jour",
+            "categorie" => $categorie
+        ],status: 201);
     }
 
     /**
