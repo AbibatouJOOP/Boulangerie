@@ -125,8 +125,8 @@ class CommandeRequest extends FormRequest
                     if (!empty($produitData['promo_id'])) {
                         $promotion = \App\Models\Promotion::find($produitData['promo_id']);
                         if (!$promotion ||
-                            $promotion->date_debut > now() ||
-                            $promotion->date_fin < now()) {
+                            $promotion->dateDebut > now() ||
+                            $promotion->dateFin < now()) {
                             $validator->errors()->add(
                                 "produits.{$index}.promo_id",
                                 "La promotion sélectionnée n'est plus active"

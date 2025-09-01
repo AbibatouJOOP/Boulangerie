@@ -13,15 +13,15 @@ class Promotion extends Model
         'nom',
         'description',
         'reduction',
-        'date_debut',
-        'date_fin',
+        'dateDebut',
+        'dateFin',
         'actif'
     ];
 
     protected $casts = [
         'reduction' => 'decimal:2',
-        'date_debut' => 'datetime',
-        'date_fin' => 'datetime',
+        'dateDebut' => 'datetime',
+        'dateFin' => 'datetime',
         'actif' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -45,17 +45,17 @@ class Promotion extends Model
     public function scopeActive($query)
     {
         return $query->where('actif', true)
-            ->where('date_debut', '<=', now())
-            ->where('date_fin', '>=', now());
+            ->where('dateDebut', '<=', now())
+            ->where('dateFin', '>=', now());
     }
 
     public function scopeExpired($query)
     {
-        return $query->where('date_fin', '<', now());
+        return $query->where('dateFin', '<', now());
     }
 
     public function scopeFuture($query)
     {
-        return $query->where('date_debut', '>', now());
+        return $query->where('dateDebut', '>', now());
     }
 }

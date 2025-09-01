@@ -17,8 +17,8 @@ class PromotionRequest extends FormRequest
             'nom' => 'required|string|max:255|unique:promotions,nom',
             'description' => 'nullable|string|max:1000',
             'reduction' => 'required|numeric|min:1|max:100',
-            'date_debut' => 'required|date|after_or_equal:today',
-            'date_fin' => 'required|date|after:date_debut',
+            'dateDebut' => 'required|date|after_or_equal:today',
+            'dateFin' => 'required|date|after:date_debut',
             'produits' => 'sometimes|array|min:1',
             'produits.*.produit_id' => 'required_with:produits|exists:produits,id',
             'produits.*.montant_reduction' => 'nullable|numeric|min:0'
@@ -28,7 +28,7 @@ class PromotionRequest extends FormRequest
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $promotionId = $this->route('promotion');
             $rules['nom'] = 'required|string|max:255|unique:promotions,nom,' . $promotionId;
-            $rules['date_debut'] = 'required|date'; // Permet de modifier une promo existante
+            $rules['dateDbut'] = 'required|date'; // Permet de modifier une promo existante
         }
 
         return $rules;
@@ -42,10 +42,10 @@ class PromotionRequest extends FormRequest
             'reduction.required' => 'Le pourcentage de réduction est obligatoire',
             'reduction.min' => 'La réduction doit être d\'au moins 1%',
             'reduction.max' => 'La réduction ne peut pas dépasser 100%',
-            'date_debut.required' => 'La date de début est obligatoire',
-            'date_debut.after_or_equal' => 'La date de début ne peut pas être antérieure à aujourd\'hui',
-            'date_fin.required' => 'La date de fin est obligatoire',
-            'date_fin.after' => 'La date de fin doit être postérieure à la date de début',
+            'dateDebut.required' => 'La date de début est obligatoire',
+            'dateDebut.after_or_equal' => 'La date de début ne peut pas être antérieure à aujourd\'hui',
+            'dateFin.required' => 'La date de fin est obligatoire',
+            'dateFin.after' => 'La date de fin doit être postérieure à la date de début',
             'produits.*.produit_id.exists' => 'Le produit sélectionné n\'existe pas',
             'produits.min' => 'Au moins un produit doit être sélectionné'
         ];

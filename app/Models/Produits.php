@@ -17,7 +17,7 @@ class Produits extends Model
     //un produit peut avoir plusieurs promotion
     public function promotions()
     {
-        return $this->belongsToMany(Promotion::class, 'promotion_produit')
+        return $this->belongsToMany(Promotion::class, 'promotion_produits')
             ->withPivot('montant_reduction')
             ->withTimestamps();
     }

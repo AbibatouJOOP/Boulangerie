@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\LivraisonController;
 use App\Http\Controllers\PaiementController;
+use App\Http\Controllers\PromotionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -27,6 +28,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Pour les admin
     Route::middleware('role:ADMIN')->group(function() {
         Route::apiResource('categories', CategorieController::class);
+        Route::apiResource('promotions', PromotionController::class);
+        Route::post('/promotions/{id}/associer-produit', [PromotionController::class, 'associerProduit']);
         Route::apiResource('produits', ProduitController::class);
         Route::delete('commandes/{id}', [CommandeController::class, 'destroy']);
     });

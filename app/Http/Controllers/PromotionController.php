@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PromotionRequest;
 use App\services\PromotionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PromotionController extends Controller
 {
@@ -35,12 +36,11 @@ class PromotionController extends Controller
                 'nom' => 'required|string|max:255',
                 'description' => 'nullable|string|max:1000',
                 'reduction' => 'required|numeric|min:1|max:100',
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after:date_debut',
+                'dateDebut' => 'required|date',
+                'dateFin' => 'required|date|after:dateDebut',
                 'actif' => 'boolean',
                 'produits' => 'sometimes|array',
-                'produits.*.produit_id' => 'required_with:produits|exists:produits,id',
-                'produits.*.montant_reduction' => 'nullable|numeric|min:0'
+                'produits.*' => 'exists:produits,id'
             ]);
 
             $promotion = $this->promotionService->store($validatedData);
@@ -83,12 +83,11 @@ class PromotionController extends Controller
                 'nom' => 'sometimes|string|max:255',
                 'description' => 'nullable|string|max:1000',
                 'reduction' => 'sometimes|numeric|min:1|max:100',
-                'date_debut' => 'sometimes|date',
-                'date_fin' => 'sometimes|date|after:date_debut',
+                'dateDebut' => 'sometimes|date',
+                'dateFin' => 'sometimes|date|after:dateDebut',
                 'actif' => 'sometimes|boolean',
                 'produits' => 'sometimes|array',
-                'produits.*.produit_id' => 'required_with:produits|exists:produits,id',
-                'produits.*.montant_reduction' => 'nullable|numeric|min:0'
+                'produits.*' => 'exists:produits,id'
             ]);
 
             $promotion = $this->promotionService->update($validatedData, $id);
@@ -218,8 +217,8 @@ class PromotionController extends Controller
                 'nom' => 'sometimes|string|max:255',
                 'description' => 'nullable|string|max:1000',
                 'reduction' => 'sometimes|numeric|min:1|max:100',
-                'date_debut' => 'sometimes|date',
-                'date_fin' => 'sometimes|date|after:date_debut',
+                'dateDebut' => 'sometimes|date',
+                'dateFin' => 'sometimes|date|after:dateDebut',
                 'actif' => 'sometimes|boolean'
             ]);
 
@@ -244,29 +243,78 @@ class PromotionController extends Controller
     public function associerProduit(Request $request, $id)
     {
         try {
+            // Log des données reçues
+            Log::info('Données reçues pour association:', [
+                'promotion_id' => $id,
+                'request_data' => $request->all(),
+                'headers' => $request->headers->all()
+            ]);
+
+            // Vérifier que la promotion existe
+            $promotion = \App\Models\Promotion::find($id);
+            if (!$promotion) {
+                Log::error("Promotion non trouvée avec ID: $id");
+                return response()->json([
+                    'error' => 'Promotion non trouvée'
+                ], 404);
+            }
+
+            // Validation des données
             $validatedData = $request->validate([
                 'produit_id' => 'required|exists:produits,id',
                 'montant_reduction' => 'nullable|numeric|min:0'
             ]);
 
+            Log::info('Données validées:', $validatedData);
+
+            // Vérifier que le produit existe
+            $produit = \App\Models\Produits::find($validatedData['produit_id']);
+            if (!$produit) {
+                Log::error("Produit non trouvé avec ID: " . $validatedData['produit_id']);
+                return response()->json([
+                    'error' => 'Produit non trouvé'
+                ], 404);
+            }
+
+            // Tentative d'association
             $association = $this->promotionService->associerProduitPromotion(
                 $id,
                 $validatedData['produit_id'],
                 $validatedData['montant_reduction'] ?? null
             );
 
+            Log::info('Association créée avec succès:', ['association' => $association]);
+
             return response()->json([
                 'message' => 'Produit associé à la promotion avec succès',
                 'association' => $association
             ], 200);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Erreur de validation:', ['errors' => $e->errors()]);
+            return response()->json([
+                'error' => 'Données de validation invalides',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'association:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'error' => 'Erreur lors de l\'association',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'details' => config('app.debug') ? [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ] : null
             ], 500);
         }
     }
+
 
     /**
      * Dissocier un produit d'une promotion
@@ -283,22 +331,6 @@ class PromotionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Erreur lors de la dissociation',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Obtenir les statistiques des promotions
-     */
-    public function statistiques()
-    {
-        try {
-            $stats = $this->promotionService->getStatistiques();
-            return response()->json($stats, 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Erreur lors de la récupération des statistiques',
                 'message' => $e->getMessage()
             ], 500);
         }

@@ -2,17 +2,15 @@
 
 namespace App\services;
 
-use App\Http\Requests\PromotionRequest;
 use App\Models\Produits;
 use App\Models\Promotion;
 use App\Models\PromotionProduit;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PromotionService
 {
-
     public function index()
     {
         return Promotion::with(['produits'])->orderBy('created_at', 'desc')->get();
@@ -21,28 +19,29 @@ class PromotionService
     public function store(array $data)
     {
         return DB::transaction(function () use ($data) {
-            // Créer la promotion
-            $promotion = Promotion::create([
-                'nom' => $data['nom'],
-                'description' => $data['description'] ?? null,
-                'reduction' => $data['reduction'],
-                'dateDebut' => $data['dateDebut'],
-                'dateFin' => $data['dateFin'],
-                'actif' => $data['actif'] ?? true
-            ]);
+            try {
+                // Créer la promotion
+                $promotion = Promotion::create([
+                    'nom' => $data['nom'],
+                    'description' => $data['description'] ?? null,
+                    'reduction' => $data['reduction'],
+                    'dateDebut' => $data['dateDebut'],
+                    'dateFin' => $data['dateFin'],
+                    'actif' => $data['actif'] ?? true
+                ]);
 
-            // Associer les produits si fournis
-            if (isset($data['produits']) && is_array($data['produits'])) {
-                foreach ($data['produits'] as $produitData) {
-                    $this->associerProduitPromotion(
-                        $promotion->id,
-                        $produitData['produit_id'],
-                        $produitData['montant_reduction'] ?? null
-                    );
+                // Associer les produits si fournis
+                if (isset($data['produits']) && is_array($data['produits']) && count($data['produits']) > 0) {
+                    foreach ($data['produits'] as $produitId) {
+                        $this->associerProduitPromotion($promotion->id, $produitId, null);
+                    }
                 }
-            }
 
-            return $promotion->load(['produits']);
+                return $promotion->load(['produits']);
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de la création de la promotion: ' . $e->getMessage());
+                throw $e;
+            }
         });
     }
 
@@ -54,34 +53,37 @@ class PromotionService
     public function update(array $data, $id)
     {
         return DB::transaction(function () use ($data, $id) {
-            $promotion = Promotion::findOrFail($id);
+            try {
+                $promotion = Promotion::findOrFail($id);
 
-            // Mettre à jour les infos de base
-            $promotion->update([
-                'nom' => $data['nom'] ?? $promotion->nom,
-                'description' => $data['description'] ?? $promotion->description,
-                'reduction' => $data['reduction'] ?? $promotion->reduction,
-                'dateDebut' => $data['date_debut'] ?? $promotion->dateDebut,
-                'dateFin' => $data['dateFin'] ?? $promotion->dateFin,
-                'actif' => $data['actif'] ?? $promotion->actif
-            ]);
+                // Mettre à jour les infos de base
+                $promotion->update([
+                    'nom' => $data['nom'] ?? $promotion->nom,
+                    'description' => $data['description'] ?? $promotion->description,
+                    'reduction' => $data['reduction'] ?? $promotion->reduction,
+                    'dateDebut' => $data['dateDebut'] ?? $promotion->dateDebut,
+                    'dateFin' => $data['dateFin'] ?? $promotion->dateFin,
+                    'actif' => $data['actif'] ?? $promotion->actif
+                ]);
 
-            // Mettre à jour les associations produits si fournies
-            if (isset($data['produits'])) {
-                // Supprimer les anciennes associations
-                PromotionProduit::where('promo_id', $promotion->id)->delete();
+                // Mettre à jour les associations produits si fournies
+                if (isset($data['produits'])) {
+                    // Supprimer les anciennes associations
+                    PromotionProduit::where('promo_id', $promotion->id)->delete();
 
-                // Créer les nouvelles associations
-                foreach ($data['produits'] as $produitData) {
-                    $this->associerProduitPromotion(
-                        $promotion->id,
-                        $produitData['produit_id'],
-                        $produitData['montant_reduction'] ?? null
-                    );
+                    // Créer les nouvelles associations
+                    if (is_array($data['produits']) && count($data['produits']) > 0) {
+                        foreach ($data['produits'] as $produitId) {
+                            $this->associerProduitPromotion($promotion->id, $produitId, null);
+                        }
+                    }
                 }
-            }
 
-            return $promotion->load(['produits']);
+                return $promotion->load(['produits']);
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de la mise à jour de la promotion: ' . $e->getMessage());
+                throw $e;
+            }
         });
     }
 
@@ -157,7 +159,14 @@ class PromotionService
         $promotion = $this->getPromotionActiveForProduit($produitId);
 
         if (!$promotion) {
-            return $prixOriginal;
+            $produit = Produits::findOrFail($produitId);
+            return [
+                'prix_original' => $produit->prix,
+                'prix_avec_promo' => $produit->prix,
+                'reduction_pourcentage' => 0,
+                'economie' => 0,
+                'promotion' => null
+            ];
         }
 
         if ($prixOriginal === null) {
@@ -182,20 +191,36 @@ class PromotionService
      */
     public function associerProduitPromotion($promoId, $produitId, $montantReduction = null)
     {
-        // Vérifier si l'association existe déjà
-        $existing = PromotionProduit::where('promo_id', $promoId)
-            ->where('produit_id', $produitId)
-            ->first();
+        try {
+            // Vérifier si la promotion existe
+            $promotion = Promotion::findOrFail($promoId);
 
-        if ($existing) {
-            return $existing;
+            // Vérifier si le produit existe
+            $produit = Produits::findOrFail($produitId);
+
+            // Vérifier si l'association existe déjà
+            $existing = PromotionProduit::where('promo_id', $promoId)
+                ->where('produit_id', $produitId)
+                ->first();
+
+            if ($existing) {
+                // Mettre à jour si nécessaire
+                if ($montantReduction !== null) {
+                    $existing->update(['montant_reduction' => $montantReduction]);
+                }
+                return $existing;
+            }
+
+            // Créer la nouvelle association
+            return PromotionProduit::create([
+                'promo_id' => $promoId,
+                'produit_id' => $produitId,
+                'montant_reduction' => $montantReduction
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'association produit-promotion: ' . $e->getMessage());
+            throw $e;
         }
-
-        return PromotionProduit::create([
-            'promo_id' => $promoId,
-            'produit_id' => $produitId,
-            'montant_reduction' => $montantReduction
-        ]);
     }
 
     /**
@@ -203,9 +228,20 @@ class PromotionService
      */
     public function dissocierProduitPromotion($promoId, $produitId)
     {
-        return PromotionProduit::where('promo_id', $promoId)
-            ->where('produit_id', $produitId)
-            ->delete();
+        try {
+            $deleted = PromotionProduit::where('promo_id', $promoId)
+                ->where('produit_id', $produitId)
+                ->delete();
+
+            if ($deleted === 0) {
+                throw new \Exception('Association non trouvée');
+            }
+
+            return $deleted;
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la dissociation produit-promotion: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**
@@ -222,29 +258,6 @@ class PromotionService
         $promotion->update(['actif' => $actif]);
 
         return $promotion;
-    }
-
-    /**
-     * Obtenir les statistiques des promotions
-     */
-    public function getStatistiques()
-    {
-        $now = Carbon::now();
-
-        return [
-            'total_promotions' => Promotion::count(),
-            'promotions_actives' => Promotion::where('actif', true)
-                ->where('dateDebut', '<=', $now)
-                ->where('dateFin', '>=', $now)
-                ->count(),
-            'promotions_futures' => Promotion::where('actif', true)
-                ->where('dateDebut', '>', $now)
-                ->count(),
-            'promotions_expirees' => Promotion::where('dateFin', '<', $now)
-                ->count(),
-            'produits_en_promotion' => $this->getProduitsEnPromotion()->count(),
-            'reduction_moyenne' => Promotion::where('actif', true)->avg('reduction')
-        ];
     }
 
     /**
@@ -276,8 +289,8 @@ class PromotionService
                 'nom' => $nouvellesDonnees['nom'] ?? $promotionOriginale->nom . ' (Copie)',
                 'description' => $nouvellesDonnees['description'] ?? $promotionOriginale->description,
                 'reduction' => $nouvellesDonnees['reduction'] ?? $promotionOriginale->reduction,
-                'date_debut' => $nouvellesDonnees['date_debut'] ?? Carbon::now(),
-                'date_fin' => $nouvellesDonnees['date_fin'] ?? Carbon::now()->addMonth(),
+                'dateDebut' => $nouvellesDonnees['dateDebut'] ?? Carbon::now(),
+                'dateFin' => $nouvellesDonnees['dateFin'] ?? Carbon::now()->addMonth(),
                 'actif' => $nouvellesDonnees['actif'] ?? false
             ]);
 
@@ -286,7 +299,7 @@ class PromotionService
                 $this->associerProduitPromotion(
                     $nouvellePromotion->id,
                     $produit->id,
-                    $produit->pivot->montant_reduction
+                    $produit->pivot->montant_reduction ?? null
                 );
             }
 

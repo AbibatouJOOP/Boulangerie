@@ -31,12 +31,12 @@ class CommandeService
     {
         $user = auth()->user();
 
-        // Version corrigée avec chargement explicite des relations
+        // chargement explicite des relations
         $query = Commandes::with([
             'user:id,nomComplet,email',
-            'produitCommander', // Charger d'abord la relation principale
+            'produitCommander', // la relation principale
             'produitCommander.produit:id,nom,prix,image,description', // Puis les sous-relations
-            'produitCommander.promotion:id,nom,reduction,date_debut,date_fin',
+            'produitCommander.promotion:id,nom,reduction,dateDebut,dateFin',
             'paiement:id,commande_id,statut,mode_paiement,montant_payé,date_paiement',
             'livraison:id,commande_id,statut,adresse_livraison,date_livraison,frais_livraison'
         ]);
@@ -104,7 +104,7 @@ class CommandeService
             'produitCommander' => function($query) {
                 $query->with([
                     'produit:id,nom,prix,image,description',
-                    'promotion:id,nom,reduction,date_debut,date_fin'
+                    'promotion:id,nom,reduction,dateDebut,dateFin'
                 ]);
             }
         ])->findOrFail($id);
@@ -157,7 +157,7 @@ class CommandeService
             'produitCommander' => function($query) {
                 $query->with([
                     'produit:id,nom,prix,image',
-                    'promotion:id,nom,reduction,date_debut,date_fin'
+                    'promotion:id,nom,reduction,dateDebut,dateFin'
                 ]);
             },
             'paiement:id,commande_id,statut,mode_paiement',
@@ -359,7 +359,7 @@ class CommandeService
             $commande = Commandes::findOrFail($commandeId);
             $promotion = $this->promotionService->show($promoId);
 
-            if (!$promotion->actif || $promotion->date_debut > now() || $promotion->date_fin < now()) {
+            if (!$promotion->actif || $promotion->dateDebut > now() || $promotion->dateFin < now()) {
                 throw new \Exception('Cette promotion n\'est plus active');
             }
 
