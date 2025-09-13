@@ -18,6 +18,7 @@ class CommandeController extends Controller
 
     public function index()
     {
+        
         try {
             $commandes = $this->commandeService->index();
             return response()->json($commandes, 200);

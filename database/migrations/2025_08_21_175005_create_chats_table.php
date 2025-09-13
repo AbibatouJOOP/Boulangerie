@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('employe_id')->constrained('users')->onDelete('cascade');
             $table->string('message');
-            $table->boolean('est_lu');
-            $table->integer('emeteur');
+            $table->boolean('est_lu')->default(false);
+            $table->tinyInteger('emeteur');
             $table->timestamps();
         });
     }

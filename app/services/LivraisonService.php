@@ -31,7 +31,7 @@ class LivraisonService
 
             // Mettre à jour le statut de la commande si nécessaire
             if ($commande->statut === 'en_préparation') {
-                $commande->update(['statut' => 'prete']);
+                //$commande->update(['statut' => 'prete']);
             }
 
             return $livraison->load(['commande.user', 'employe']);

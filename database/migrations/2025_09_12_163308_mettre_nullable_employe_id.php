@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::rename('promotion_produit', 'promotion_produits');
+        Schema::table('chats', function (Blueprint $table) {
+            $table->foreignId('employe_id')->nullable()->change();
+        });
     }
 
     /**
@@ -19,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('chats', function (Blueprint $table) {
+            //
+        });
     }
 };

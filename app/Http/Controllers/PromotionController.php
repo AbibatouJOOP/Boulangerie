@@ -44,6 +44,7 @@ class PromotionController extends Controller
             ]);
 
             $promotion = $this->promotionService->store($validatedData);
+            
 
             return response()->json([
                 'message' => 'Promotion créée avec succès',

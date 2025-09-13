@@ -160,6 +160,7 @@ class CommandeService
                     'promotion:id,nom,reduction,dateDebut,dateFin'
                 ]);
             },
+            'user:id,nomComplet,email',
             'paiement:id,commande_id,statut,mode_paiement',
             'livraison:id,commande_id,statut,adresse_livraison,date_livraison,frais_livraison'
         ])->where('client_id', $clientId)
@@ -285,12 +286,12 @@ class CommandeService
     {
         // Mettre à jour le statut de livraison via le service
         if ($commande->livraison) {
-            $nouveauStatutLivraison = $this->mapStatutCommandeToLivraison($nouveauStatut);
-            if ($nouveauStatutLivraison) {
-                $this->livraisonService->update([
-                    'statut' => $nouveauStatutLivraison
-                ], $commande->livraison->id);
-            }
+    $nouveauStatutLivraison = $this->mapStatutCommandeToLivraison($nouveauStatut);
+    if ($nouveauStatutLivraison) { // update seulement si statut valide
+        $this->livraisonService->update([
+            'statut' => $nouveauStatutLivraison
+        ], $commande->livraison->id);
+    }
         }
 
         // Mettre à jour le statut de paiement si nécessaire
@@ -313,13 +314,12 @@ class CommandeService
      */
     private function mapStatutCommandeToLivraison($statutCommande)
     {
-        $mapping = [
-            'en_livraison' => 'en_cours',
-            'livrée' => 'livrée',
-            'annulée' => 'annulée'
-        ];
+         $statutsValidesLivraison = [
+        'livrée'         => 'livrée',
+        'non_livrée'        => 'non_livrée'
+    ];
 
-        return $mapping[$statutCommande] ?? null;
+    return $statutsValidesLivraison[$statutCommande] ?? null;
     }
 
     /**

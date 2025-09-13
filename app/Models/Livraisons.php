@@ -50,8 +50,8 @@ class Livraisons extends Model
 
     public function scopeEnRetard($query)
     {
-        return $query->where('date_livraison', '<', now())
-            ->whereIn('statut', ['non_livrée', 'en_cours']);
+         return $query->where('date_livraison', '<', now())
+                 ->where('statut', 'non_livree');
     }
 
     public function scopeAujourdhui($query)

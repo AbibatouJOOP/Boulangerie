@@ -27,4 +27,15 @@ class Produits extends Model
     public function commandeProduit() {
         return $this->hasMany(CommandeProduit::class);
     }
+
+    public function estStockFaible(): bool
+    {
+        return $this->stock <= 5; 
+    }
+
+    public function estStockVide(): bool
+    {
+        return $this->stock <= 0;
+    }
+
 }

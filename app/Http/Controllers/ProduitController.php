@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\services\ProduitService;
 use App\Http\Requests\ProduitRequest;
@@ -9,12 +10,11 @@ use App\Http\Requests\ProduitRequest;
 class ProduitController extends Controller
 {
     protected $produitService;
-    /**
-     * Display a listing of the resource.
-     */
+
     public function __construct(){
         $this->produitService = new ProduitService();
     }
+
     public function index(Request $request)
     {
         // Log pour debug
@@ -27,9 +27,6 @@ class ProduitController extends Controller
         return response()->json($produits, 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(ProduitRequest $request)
     {
         $data = $request->validated();
@@ -45,19 +42,12 @@ class ProduitController extends Controller
         return response()->json($produit, 201, [], JSON_UNESCAPED_UNICODE);
     }
 
-
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $produit = $this->produitService->show($id);
         return response()->json($produit, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(ProduitRequest $request, string $id)
     {
         $data = $request->validated();
@@ -80,14 +70,53 @@ class ProduitController extends Controller
         return response()->json($produits, 200);
     }
 
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $this->produitService->destroy($id);
         return response()->json(null, 204);
+    }
+
+    /**
+     * Réapprovisionner un produit
+     */
+    public function restock(Request $request, string $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'quantite' => 'required|integer|min:1|max:10000'
+        ]);
+
+        try {
+            $produit = $this->produitService->restock($id, $request->quantite);
+
+            return response()->json([
+                'message' => "Produit réapprovisionné avec succès. Nouveau stock: {$produit->stock}",
+                'produit' => $produit
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors du réapprovisionnement',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtenir les produits avec stock faible
+     */
+    public function getLowStockProducts(): JsonResponse
+    {
+        $produits = $this->produitService->getLowStockProducts();
+        return response()->json($produits, 200);
+    }
+
+    /**
+     * Obtenir les statistiques de stock
+     */
+    public function getStockStatistics(): JsonResponse
+    {
+        $stats = $this->produitService->getStockStatistics();
+        return response()->json($stats, 200);
     }
 }
 
